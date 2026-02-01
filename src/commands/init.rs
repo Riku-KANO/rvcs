@@ -1,6 +1,6 @@
+use anyhow::Ok;
 use std::fs;
 use std::path::Path;
-use anyhow::Ok;
 
 pub fn run() -> anyhow::Result<()> {
     let repo_dir = Path::new(".rvcs");
