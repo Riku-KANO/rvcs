@@ -1,8 +1,9 @@
 use anyhow::{Context, anyhow};
-use sha2::{Digest, Sha256};
-use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+
+use crate::index::Index;
+use crate::utils::{ensure_repo_exists, normalize_path, sha256_hex};
 
 /// Add a file to the repository
 ///
@@ -49,66 +50,4 @@ pub fn run(path: String) -> anyhow::Result<()> {
 
     println!("added {}  {}", hash, input_path.display());
     Ok(())
-}
-
-struct Index {
-    entries: BTreeMap<String, String>,
-}
-
-impl Index {
-    fn load(index_path: &Path) -> anyhow::Result<Self> {
-        let content = fs::read_to_string(index_path).unwrap_or_default();
-        let mut entries = BTreeMap::new();
-
-        for line in content.lines() {
-            // format: <hash> <path>
-            let (hash, path) = match line.split_once(' ') {
-                Some(v) => v,
-                None => continue,
-            };
-            if !hash.is_empty() && !path.is_empty() {
-                entries.insert(path.to_string(), hash.to_string());
-            }
-        }
-
-        Ok(Self { entries })
-    }
-
-    fn save(&self, index_path: &Path) -> anyhow::Result<()> {
-        let out: String = self
-            .entries
-            .iter()
-            .map(|(path, hash)| format!("{hash} {path}\n"))
-            .collect();
-
-        fs::write(index_path, out)?;
-        Ok(())
-    }
-
-    fn add(&mut self, path: String, hash: String) {
-        self.entries.insert(path, hash);
-    }
-}
-
-fn ensure_repo_exists() -> anyhow::Result<()> {
-    let repo_dir = Path::new(".rvcs");
-    if !repo_dir.exists() {
-        return Err(anyhow!("not an rvcs repository (run `rvcs init` first)"));
-    }
-    let objects_dir = repo_dir.join("objects");
-    if !objects_dir.exists() {
-        return Err(anyhow!(".rvcs/objects missing (repo seems corrupted)"));
-    }
-    Ok(())
-}
-
-fn sha256_hex(bytes: &[u8]) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(bytes);
-    let digest = hasher.finalize();
-    hex::encode(digest)
-}
-
-fn normalize_path(p: &Path) -> String {
-    p.to_string_lossy().replace('\\', "/")
 }

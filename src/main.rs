@@ -1,6 +1,8 @@
 use clap::{Parser, Subcommand};
 
 mod commands;
+mod index;
+mod utils;
 
 #[derive(Parser)]
 #[command(name = "rvcs", version, about = "mini vcs")]
@@ -15,6 +17,11 @@ enum Command {
     Init,
     /// Add file to staging (index) and store object
     Add { path: String },
+    /// Create a new commit
+    Commit {
+        #[arg(short, long)]
+        message: String,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -23,5 +30,6 @@ fn main() -> anyhow::Result<()> {
     match cli.command {
         Command::Init => commands::init::run(),
         Command::Add { path } => commands::add::run(path),
+        Command::Commit { message } => commands::commit::run(message),
     }
 }
